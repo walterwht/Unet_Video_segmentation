@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import torchvision
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
 from torchvision import models
@@ -32,73 +33,70 @@ class doubleConvBlock(nn.Module):
 
 class Down(nn.Module):
   def __init__(self, in_channels, out_channels):
-    super().-_init__()
-    maxpool=nn.MaxPool2d(2)
-    conv=DoubleConv(in_channels, out_channels)
+    super().__init__()
+    self.maxpool=nn.MaxPool2d(2)
+    self.conv=DoubleConv(in_channels, out_channels)
   
   def forward(self,x):
-    x=maxpool(x)
-    x=conv(x)
+    x=self.maxpool(x)
+    x=self.conv(x)
     return x
  
 class Up(nn.Module):
-  def __init__(self
-
-
-class Unet(nn.Module):
-    def __init__(self, y_classes=92):
-        super().__init__()
-        self.inputlayer = doubleConvBlock(1,64)
-        self.layer2 = doubleConvBlock(64,128)
-        self.layer3 = doubleConvBlock(128,256)
-        self.layer4 = doubleConvBlock(256,512)
-        self.layer5 = doubleConvBlock(512,1024)
-
-
-        self.uplayer1 = nn.ConvTranspose2d(2048, 1024, 2, stride=2)
-        self.uplayer2 = nn.ConvTranspose2d(1024, 512, 2, stride=2)
-        self.uplayer3 = nn.ConvTranspose2d(512, 256, 2, stride=2)
-        self.uplayer4 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.uplayer5 = nn.ConvTranspose2d(64, 64, 2, stride=2)
-
-        self.upconv1 = ConvBlock(2048, 1024)
-        self.upconv2 = ConvBlock(1024, 512)
-        self.upconv3 = ConvBlock(512, 128)
-        self.upconv4 = ConvBlock(128, 64)
-        self.upconv5 = ConvBlock(64, 64)
-
-        #self.UnetClasses = nn.Conv2d(64, y_classes, 1)
-
-        self.FinalStage = FinalStage(64,y_classes)
+  def __init__(self,in_channels,out_channes):
+    super().__init__()
+    self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=2, stride=2)
+    self.conv = DoubleConv(in_channels, out_channels)
+    
+  def forward(self, x1, x2):
+    x1 = self.up(x1)
+    #CWH
+    diffY = x2.size()[2] - x1.size()[2]
+    diffX = x2.size()[3] - x1.size()[3]
+    
+    x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                    diffY // 2, diffY - diffY // 2])
+    x = torch.cat([x2, x1], dim=1)
+    return self.conv(x)
+    
+class OutConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(OutConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
 
     def forward(self, x):
-        downlayer1 = self.inputlayer(x)
-        downlayer2 = self.layer1(downlayer1)
-        downlayer3 = self.layer2(downlayer2)
-        downlayer4 = self.layer3(downlayer3)
-        out = self.layer4(downlayer4)
+        return self.conv(x)
 
-        out = self.uplayer1(out)
-        out = torch.cat((out, downlayer4), dim=1)
-        out = self.upconv1(out)
+class UNet(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super(UNet, self).__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
 
-        out = self.uplayer2(out)
-        out = torch.cat((out, downlayer3), dim=1)
-        out = self.upconv2(out)
+        self.inc = DoubleConv(n_channels, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 256)
+        self.down3 = Down(256, 512)
+        factor = 2 if bilinear else 1
+        self.down4 = Down(512, 1024 // factor)
+        self.up1 = Up(1024, 512 // factor, bilinear)
+        self.up2 = Up(512, 256 // factor, bilinear)
+        self.up3 = Up(256, 128 // factor, bilinear)
+        self.up4 = Up(128, 64, bilinear)
+        self.outc = OutConv(64, n_classes)
 
-        out = self.uplayer3(out)
-        out = torch.cat((out, downlayer2), dim=1)
-        out = self.upconv3(out)
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        logits = self.outc(x)
+        return logits
 
-        out = self.uplayer4(out)
-        out = torch.cat((out, downlayer1), dim=1)
-        out = self.upconv4(out)
-
-        out = self.uplayer5(out)
-
-        #out = self.UnetClasses(out)
-        out = self.FinalStage(out)
-
-        return out
-
-
+a
