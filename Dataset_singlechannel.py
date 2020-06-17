@@ -32,6 +32,9 @@ def transformdata(image, mask):
         image = TF.vflip(image)
         mask = TF.vflip(mask)
 
+    # Grayscale
+    image = TF.Grayscale(image)
+    
     # Transform to tensor
     image = TF.to_tensor(image)
     mask = TF.to_tensor(mask)
@@ -58,10 +61,10 @@ class cocodataset(data.Dataset):
 
     ann_ids = coco.getAnnIds(imgIds=img_id)
     anns = coco.loadAnns(ann_ids)
-    mask = np.zeros((img_metadata['height'],img_metadata['width']),dtype=np.uint8)
+    mask = np.zeros((92,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
 
     for i in range(len(anns)):
-      mask = np.maximum(mask,coco.annToMask(anns[i])*anns[i]['category_id'])
+      mask[anns[i]['category_id']] = coco.annToMask(anns[i])
 
     mask = transforms.ToPILImage()(mask)
 
