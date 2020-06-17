@@ -13,13 +13,13 @@ from PIL import Image
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DoubleConvBlock(nn.Module):
-    def __init__(self, input_channel, output_channel, padding=0, kernel_size=1, stride=1):
+    def __init__(self, in_channels, out_channels, padding=0, kernel_size=1, stride=1):
         super().__init__()
-        self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
-        self.bn = nn.BatchNorm2d(output_channel)
+        self.conv = nn.Conv2d(in_channels, out_channels, padding=padding, kernel_size=kernel_size, stride=stride)
+        self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
-        self.conv2 = nn.Conv2d(output_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
-        self.bn2 = nn.BatchNorm2d(output_channel)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, padding=padding, kernel_size=kernel_size, stride=stride)
+        self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu2 = nn.ReLU()
 
     def forward(self, x):
@@ -43,7 +43,7 @@ class Down(nn.Module):
     return x
  
 class Up(nn.Module):
-  def __init__(self,in_channels,out_channes):
+  def __init__(self,in_channels,out_channels):
     super().__init__()
     self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=2, stride=2)
     self.conv = DoubleConvBlock(in_channels, out_channels)
