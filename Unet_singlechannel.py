@@ -12,7 +12,10 @@ from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class doubleConvBlock(nn.Module):
+class 
+
+
+Block(nn.Module):
     def __init__(self, input_channel, output_channel, padding=0, kernel_size=1, stride=1):
         super().__init__()
         self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
@@ -35,7 +38,7 @@ class Down(nn.Module):
   def __init__(self, in_channels, out_channels):
     super().__init__()
     self.maxpool=nn.MaxPool2d(2)
-    self.conv=DoubleConv(in_channels, out_channels)
+    self.conv=doubleConvBlock(in_channels, out_channels)
   
   def forward(self,x):
     x=self.maxpool(x)
@@ -46,7 +49,7 @@ class Up(nn.Module):
   def __init__(self,in_channels,out_channes):
     super().__init__()
     self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=2, stride=2)
-    self.conv = DoubleConv(in_channels, out_channels)
+    self.conv = DoubleConvBlock(in_channels, out_channels)
     
   def forward(self, x1, x2):
     x1 = self.up(x1)
@@ -73,7 +76,7 @@ class UNet(nn.Module):
         self.n_channels = n_channels
         self.n_classes = n_classes
 
-        self.inc = DoubleConv(n_channels, 64)
+        self.inc = doubleConvBlock(n_channels, 64)
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)
         self.down3 = Down(256, 512)
