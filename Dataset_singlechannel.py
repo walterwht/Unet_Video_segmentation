@@ -40,15 +40,15 @@ def transformdata(image, mask):
     newMasks = np.zeros((92,OPsize,OPsize),dtype=np.uint8)
     
     for i in range(92):
-         nmask = transforms.ToPILImage()(mask[i])
+         nmask = transforms.ToPILImage(mode="L")(mask[i])
          nmask = resize(nmask)
          nmask = TF.crop(nmask, i, j, h, w)
          if RHF > 0.5:
             nmask = TF.hflip(nmask)
          if RVF > 0.5:
             nmask = TF.vflip(nmask)
-         nmask = TF.to_tensor(nmask)
-         newMasks[i] = nmask
+         nmasknumpy = np.array(nmask,dtype="uint8")
+         newMasks[i] += nmasknumpy
 
     
     # Transform to tensor
