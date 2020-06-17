@@ -10,6 +10,9 @@ from PIL import Image
 import os
 
 
+grayscale = transforms.Compose([
+    transforms.Grayscale(1)])
+
 
 def transformdata(image, mask):
     # Resize
@@ -33,7 +36,7 @@ def transformdata(image, mask):
         mask = TF.vflip(mask)
 
     # Grayscale
-    image = transforms.Grayscale(image)
+    image = grayscale(image)
     
     # Transform to tensor
     image = TF.to_tensor(image)
@@ -70,7 +73,7 @@ class cocodataset(data.Dataset):
 
     img, target = transformdata(img, mask)
 
-    return img, target[0]
+    return img, target
 
   def __len__(self):
     return len(self.ids)
