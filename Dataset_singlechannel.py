@@ -35,7 +35,7 @@ def transformdata(image, mask):
         image = TF.vflip(image)
         
     # image Grayscale
-    image = transform.Grayscale(1)(image)
+    image = transforms.Grayscale(1)(image)
     
     newMasks = np.zero(92,OPsize,OPsize,dtype=np.uint8)
     
