@@ -33,7 +33,7 @@ def transformdata(image, mask):
         mask = TF.vflip(mask)
 
     # Grayscale
-    image = TF.Grayscale(image)
+    image = transforms.Grayscale(image)
     
     # Transform to tensor
     image = TF.to_tensor(image)
