@@ -12,10 +12,7 @@ from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class 
-
-
-Block(nn.Module):
+class DoubleConvBlock(nn.Module):
     def __init__(self, input_channel, output_channel, padding=0, kernel_size=1, stride=1):
         super().__init__()
         self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
