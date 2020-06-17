@@ -10,28 +10,15 @@ from PIL import Image
 import os
 
 
-transformimg = transforms.Compose(
-    [transforms.Resize(256 + 64),
-     transforms.RandomCrop(256),
-     transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-transformmask=transforms.Compose([
-                    transforms.ToPILImage(mode='L'),
-                    transforms.Resize(256+64),
-                    transforms.RandomCrop(256),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.5],std=[0.5])
-])
 
 def transformdata(image, mask):
     # Resize
-    resize = transforms.Resize(size=(256+128, 256+128))
+    resize = transforms.Resize(size=(512+128))
     image = resize(image)
     mask = resize(mask)
 
     # Random crop
-    i, j, h, w = transforms.RandomCrop.get_params(image, output_size=(256, 256))
+    i, j, h, w = transforms.RandomCrop.get_params(image, output_size=(512, 512))
     image = TF.crop(image, i, j, h, w)
     mask = TF.crop(mask, i, j, h, w)
 
