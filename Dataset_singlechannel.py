@@ -37,7 +37,7 @@ def transformdata(image, mask):
     # image Grayscale
     image = transforms.Grayscale(1)(image)
     
-    newMasks = np.zero(92,OPsize,OPsize,dtype=np.uint8)
+    newMasks = np.zeros(92,OPsize,OPsize,dtype=np.uint8)
     
     for i in range(mask):
          nmask = transforms.ToPILImage()(mask[i])
