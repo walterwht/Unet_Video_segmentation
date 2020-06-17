@@ -39,7 +39,7 @@ def transformdata(image, mask):
     
     newMasks = np.zeros((92,OPsize,OPsize),dtype=np.uint8)
     
-    for i in range(mask):
+    for i in range(92):
          nmask = transforms.ToPILImage()(mask[i])
          nmask = resize(nmask)
          nmask = TF.crop(nmask, i, j, h, w)
