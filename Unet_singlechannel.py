@@ -35,7 +35,7 @@ class Down(nn.Module):
   def __init__(self, in_channels, out_channels):
     super().__init__()
     self.maxpool=nn.MaxPool2d(2)
-    self.conv=doubleConvBlock(in_channels, out_channels)
+    self.conv=DoubleConvBlock(in_channels, out_channels)
   
   def forward(self,x):
     x=self.maxpool(x)
