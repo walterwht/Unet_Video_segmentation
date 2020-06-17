@@ -9,39 +9,52 @@ from pycocotools.coco import COCO
 from PIL import Image
 import os
 
-
-grayscale = transforms.Compose([
-    transforms.Grayscale(1)])
-
+OPsize=512
 
 def transformdata(image, mask):
-    # Resize
-    resize = transforms.Resize(size=(512+128))
-    image = resize(image)
-    mask = resize(mask)
-
-    # Random crop
-    i, j, h, w = transforms.RandomCrop.get_params(image, output_size=(512, 512))
-    image = TF.crop(image, i, j, h, w)
-    mask = TF.crop(mask, i, j, h, w)
-
     # Random horizontal flipping
-    if random.random() > 0.5:
-        image = TF.hflip(image)
-        mask = TF.hflip(mask)
-
+    RHF = random.random()
+    
     # Random vertical flipping
-    if random.random() > 0.5:
+    RVF = random.random()
+    
+    
+    # Image
+    resize = transforms.Resize(size=(OPsize+128))
+    image = resize(image)
+    
+    # image Random crop
+    i, j, h, w = transforms.RandomCrop.get_params(image, output_size=(OPsize, OPsize))
+    image = TF.crop(image, i, j, h, w)
+    
+    #image flipping
+    if RHF > 0.5:
+        image = TF.hflip(image)
+        
+    if RVF > 0.5:
         image = TF.vflip(image)
-        mask = TF.vflip(mask)
+        
+    # image Grayscale
+    image = transform.Grayscale(1)(image)
+    
+    newMasks = np.zero(92,OPsize,OPsize,dtype=np.uint8)
+    
+    for i in range(mask):
+         nmask = transforms.ToPILImage()(mask[i])
+         nmask = resize(nmask)
+         nmask = TF.crop(nmask, i, j, h, w)
+         if RHF > 0.5:
+            nmask = TF.hflip(nmask)
+         if RVF > 0.5:
+            nmask = TF.vflip(nmask)
+         nmask = TF.to_tensor(nmask)
+         newMasks[i] = nmask
 
-    # Grayscale
-    image = grayscale(image)
     
     # Transform to tensor
     image = TF.to_tensor(image)
-    mask = TF.to_tensor(mask)
-    return image, mask
+    
+    return image, newMasks
 
 class cocodataset(data.Dataset):
   def __init__(self, root, annFile, transform=None,target_transform=None):
@@ -68,8 +81,6 @@ class cocodataset(data.Dataset):
 
     for i in range(len(anns)):
       mask[anns[i]['category_id']] = coco.annToMask(anns[i])
-
-    mask = transforms.ToPILImage()(mask)
 
     img, target = transformdata(img, mask)
 
