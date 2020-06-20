@@ -84,9 +84,9 @@ class cocodataset(data.Dataset):
 
     img, target = transformdata(img, mask)
     
-    fmask = np.zeros((img_metadata['height'],img_metadata['width']),dtype=np.uint8)
+    fmask = np.zeros((OPsize,OPsize),dtype=np.uint8)
 
-    for w in range(target):
+    for w in target:
       fmask = np.maximum(fmask,w)
 
     return img, fmask
