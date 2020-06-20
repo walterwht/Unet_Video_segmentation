@@ -84,7 +84,7 @@ class cocodataset(data.Dataset):
 
     img, target = transformdata(img, mask)
     
-    fmask = np.zeros((1,OPsize,OPsize),dtype=np.float32)
+    fmask = np.zeros((OPsize,OPsize),dtype=np.float32)
 
     for w in target:
       fmask = np.maximum(fmask,w)
