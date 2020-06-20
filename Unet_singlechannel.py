@@ -53,7 +53,7 @@ class Up(nn.Module):
     #CWH
     diffX = x2.size()[2] - x1.size()[2]
     diffY = x2.size()[3] - x1.size()[3]
-    #print('sizes',x1.size(),x2.size(),diffX // 2, diffX - diffX//2, diffY // 2, diffY - diffY//2)
+    
     x1 = F.pad(x1, (diffX // 2, diffX - diffX//2,
                     diffY // 2, diffY - diffY//2))
     x = torch.cat([x2, x1], dim=1)
@@ -77,10 +77,10 @@ class UNet(nn.Module):
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)
         self.down3 = Down(256, 512)
-        self.down4 = Down(512, 1024 // 2)
-        self.up1 = Up(1024, 512 // 2)
-        self.up2 = Up(512, 256 // 2)
-        self.up3 = Up(256, 128 // 2)
+        self.down4 = Down(512, 1024)
+        self.up1 = Up(1024, 512)
+        self.up2 = Up(512, 256)
+        self.up3 = Up(256, 128)
         self.up4 = Up(128, 64)
         self.outc = OutConv(64, n_classes)
 
