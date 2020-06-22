@@ -10,7 +10,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 
-OPsize=512
+OPsize=256
 
 def transformdata(image, mask):
     # Random horizontal flipping
@@ -84,13 +84,8 @@ class cocodataset(data.Dataset):
 
     img, target = transformdata(img, mask)
     
+    Tmask = target.max(dim=0)[0]*target.max(dim=0)[1]
     
-    #fmask = torch.zeros((OPsize,OPsize),dtype=np.uint8)
-    
-    Tmask = np.zeros((OPsize,OPsize),dtype=np.uint)
-    for m1 in range(92):
-     Tmask = np.maximum(Tmask,target[0][m1]*m1)
-
     return img, Tmask
 
   def __len__(self):
