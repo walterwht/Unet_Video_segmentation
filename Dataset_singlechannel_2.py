@@ -7,6 +7,7 @@ import torchvision.transforms.functional as TF
 import random
 from pycocotools.coco import COCO
 from PIL import Image
+import matplotlib.pyplot as plt
 import os
 
 OPsize=512
@@ -24,9 +25,9 @@ def transformdata(image, mask):
     image = resize(image)
     
     # image Random crop
-    i, j, h, w = transforms.RandomCrop.get_params(image, output_size=(OPsize, OPsize))
-    image = TF.crop(image, i, j, h, w)
-    
+    t, l, h, w = transforms.RandomCrop.get_params(image, output_size=(OPsize, OPsize))
+    image = TF.crop(image, t, l, h, w)
+
     #image flipping
     if RHF > 0.5:
         image = TF.hflip(image)
@@ -37,20 +38,19 @@ def transformdata(image, mask):
     # image Grayscale
     image = transforms.Grayscale(1)(image)
     
-    newMasks = np.zeros((92,OPsize,OPsize),dtype=np.uint8)
+    newMasks = torch.zeros((92,OPsize,OPsize))
     
-    for i in range(92):
-         nmask = transforms.ToPILImage(mode="L")(mask[i])
+    for mc in range(92):
+         nmask = transforms.ToPILImage(mode="L")(mask[mc])
          nmask = resize(nmask)
-         nmask = TF.crop(nmask, i, j, h, w)
+         nmask = TF.crop(nmask, t, l, h, w)
          if RHF > 0.5:
             nmask = TF.hflip(nmask)
          if RVF > 0.5:
             nmask = TF.vflip(nmask)
-         nmasknumpy = np.array(nmask,dtype="uint8")
-         newMasks[i] += nmasknumpy
+         nmasknumpy = TF.to_tensor(nmask)
+         newMasks[mc] += nmasknumpy[0]
 
-    
     # Transform to tensor
     image = TF.to_tensor(image)
     
@@ -80,17 +80,18 @@ class cocodataset(data.Dataset):
     mask = np.zeros((92,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
 
     for i in range(len(anns)):
-      mask[anns[i]['category_id']] = coco.annToMask(anns[i])
+      mask[anns[i]['category_id']] = coco.annToMask(anns[i])*255
 
     img, target = transformdata(img, mask)
     
-    fmask = np.zeros((OPsize,OPsize),dtype=np.uint8)
+    
+    #fmask = torch.zeros((OPsize,OPsize),dtype=np.uint8)
+    
+    Tmask = np.zeros((512,512),dtype=np.uint)
+    for m1 in range(92):
+     Tmask = np.maximum(Tmask,target[0][m1]*m1)
 
-    for g, w in enumerate(target,0):
-        fmask = np.maximum(fmask,w*g)
-    fmask = torch.from_numpy(fmask).long()
-
-    return img, fmask
+    return img, Tmask
 
   def __len__(self):
     return len(self.ids)
