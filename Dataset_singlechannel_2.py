@@ -84,10 +84,10 @@ class cocodataset(data.Dataset):
 
     img, target = transformdata(img, mask)
     
-    fmask = np.zeros((OPsize,OPsize),dtype=np.float32)
+    fmask = np.zeros((OPsize,OPsize),dtype=np.uint8)
 
-    for w in target:
-      fmask = np.maximum(fmask,w)
+    for g, w in enumerate(target,0):
+        fmask = np.maximum(fmask,w)*g
     fmask = torch.from_numpy(fmask).long()
 
     return img, fmask
