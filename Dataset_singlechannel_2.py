@@ -87,7 +87,7 @@ class cocodataset(data.Dataset):
     
     #fmask = torch.zeros((OPsize,OPsize),dtype=np.uint8)
     
-    Tmask = np.zeros((512,512),dtype=np.uint)
+    Tmask = np.zeros((OPsize,OPsize),dtype=np.uint)
     for m1 in range(92):
      Tmask = np.maximum(Tmask,target[0][m1]*m1)
 
