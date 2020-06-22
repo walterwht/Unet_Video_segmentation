@@ -82,12 +82,12 @@ class cocodataset(data.Dataset):
     for i in range(len(anns)):
       mask[anns[i]['category_id']] = coco.annToMask(anns[i])*255
 
-    img, target = transformdata(img, mask)
+    inimg, target = transformdata(img, mask)
     
     Tmask = target.max(dim=0)[0]*target.max(dim=0)[1]
     Tmask = Tmask.squeeze(0)
     
-    return img, Tmask
+    return inimg, Tmask
 
   def __len__(self):
     return len(self.ids)
