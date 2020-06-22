@@ -85,6 +85,7 @@ class cocodataset(data.Dataset):
     img, target = transformdata(img, mask)
     
     Tmask = target.max(dim=0)[0]*target.max(dim=0)[1]
+    Tmask = Tmask.squeeze(0)
     
     return img, Tmask
 
