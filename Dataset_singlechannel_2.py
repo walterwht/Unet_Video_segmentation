@@ -21,7 +21,7 @@ def transformdata(image, mask):
     
     
     # Image
-    resize = transforms.Resize(size=(OPsize+128))
+    resize = transforms.Resize(size=(OPsize+64))
     image = resize(image)
     
     # image Random crop
@@ -85,8 +85,6 @@ class cocodataset(data.Dataset):
     inimg, target = transformdata(img, mask)
     
     Tmask = target.max(dim=0)[0]*target.max(dim=0)[1]
-    Tmask = Tmask.squeeze(0)
-    
     return inimg, Tmask
 
   def __len__(self):
