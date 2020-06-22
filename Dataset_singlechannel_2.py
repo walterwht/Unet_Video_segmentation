@@ -87,7 +87,7 @@ class cocodataset(data.Dataset):
     fmask = np.zeros((OPsize,OPsize),dtype=np.uint8)
 
     for g, w in enumerate(target,0):
-        fmask = np.maximum(fmask,w)*g
+        fmask = np.maximum(fmask,w*g)
     fmask = torch.from_numpy(fmask).long()
 
     return img, fmask
