@@ -53,6 +53,8 @@ def transformdata(image, mask):
 
     # Transform to tensor
     image = TF.to_tensor(image)
+    newMasks[0] = 1-newMasks[1:][0]
+    
     
     return image, newMasks
 
