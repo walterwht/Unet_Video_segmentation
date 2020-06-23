@@ -80,11 +80,13 @@ class cocodataset(data.Dataset):
     mask = np.zeros((92,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
 
     for i in range(len(anns)):
-      mask[anns[i]['category_id']] = coco.annToMask(anns[i])*255
+      cat_id = anns[i]["category_id"]
+      mask[cat_id] += coco.annToMask(anns[i])
 
     inimg, target = transformdata(img, mask)
     
-    Tmask = target.max(dim=0)[0]*target.max(dim=0)[1]
+    Tmask = target.max(dim=0)[0]*target.max(dim=0)[1] 
+      
     return inimg, Tmask
 
   def __len__(self):
