@@ -41,7 +41,7 @@ def transformdata(image, mask):
     newMasks = torch.zeros((92,OPsize,OPsize))
     
     for mc in range(92):
-         nmask = transforms.ToPILImage(mode="L")(mask[mc])
+         nmask = transforms.ToPILImage(mode="L")(mask[mc]*255)
          nmask = resize(nmask)
          nmask = TF.crop(nmask, t, l, h, w)
          if RHF > 0.5:
@@ -49,7 +49,7 @@ def transformdata(image, mask):
          if RVF > 0.5:
             nmask = TF.vflip(nmask)
          nmasknumpy = TF.to_tensor(nmask)
-         newMasks[mc] += nmasknumpy[0]
+         newMasks[mc] += nmasknumpy[0].round()
 
     # Transform to tensor
     image = TF.to_tensor(image)
@@ -85,7 +85,8 @@ class cocodataset(data.Dataset):
 
     inimg, target = transformdata(img, mask)
     
-    Tmask = target.max(dim=0)[0]*target.max(dim=0)[1] 
+    Tmask = torch.argmax(target, dim=0).squeeze(0)
+
       
     return inimg, Tmask
 
