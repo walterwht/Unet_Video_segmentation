@@ -70,6 +70,7 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
+        self.lsm= nn.LogSoftmax(dim=1)
 
         self.inc = DoubleConvBlock(n_channels, 92)
         self.down1 = Down(92, 184)
@@ -93,5 +94,6 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
-        return logits
+        out = self.lsm(logits)
+        return out
 
