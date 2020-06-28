@@ -12,6 +12,8 @@ import os
 
 OPsize=256
 
+
+
 def transformdata(image, mask):
     # Random horizontal flipping
     RHF = random.random()
@@ -38,9 +40,9 @@ def transformdata(image, mask):
     # image Grayscale
     image = transforms.Grayscale(1)(image)
     
-    newMasks = torch.zeros((92,OPsize,OPsize))
+    newMasks = torch.zeros((80,OPsize,OPsize))
     
-    for mc in range(92):
+    for mc in range(80):
          nmask = transforms.ToPILImage(mode="L")(mask[mc]*255)
          nmask = resize(nmask)
          nmask = TF.crop(nmask, t, l, h, w)
@@ -49,11 +51,11 @@ def transformdata(image, mask):
          if RVF > 0.5:
             nmask = TF.vflip(nmask)
          nmasknumpy = TF.to_tensor(nmask)
-         newMasks[mc] += nmasknumpy[0].round()
+         newMasks[mc] = nmasknumpy[0].round()
 
     # Transform to tensor
     image = TF.to_tensor(image)
-    newMasks[0] = 1-newMasks[1:][0]
+    #newMasks[0] = 1-newMasks[1:][0]
     
     
     return image, newMasks
@@ -68,6 +70,7 @@ class cocodataset(data.Dataset):
     self.target_transform = target_transform
     self.root = root
     self.coco_mask=coco_mask
+    
 
 
   def __getitem__(self, index):
@@ -79,11 +82,15 @@ class cocodataset(data.Dataset):
 
     ann_ids = coco.getAnnIds(imgIds=img_id)
     anns = coco.loadAnns(ann_ids)
-    mask = np.zeros((92,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
-
+    mask = np.zeros((80,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
+    
+    
+    
     for i in range(len(anns)):
       cat_id = anns[i]["category_id"]
-      mask[cat_id] += coco.annToMask(anns[i])
+      catname = coco.loadCats(cat_id)
+      classnumber = allclassnms.index(catname)
+      mask[classnumber] += coco.annToMask(anns[i])
 
     inimg, target = transformdata(img, mask)
     
