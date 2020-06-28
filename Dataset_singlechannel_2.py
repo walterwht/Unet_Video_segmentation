@@ -10,8 +10,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 
-OPsize=256
 
+OPsize=256
 
 
 def transformdata(image, mask):
@@ -61,7 +61,7 @@ def transformdata(image, mask):
     return image, newMasks
 
 class cocodataset(data.Dataset):
-  def __init__(self, root, annFile, transform=None,target_transform=None):
+  def __init__(self, root, annFile, classes):
     from pycocotools.coco import COCO
     import pycocotools._mask as coco_mask
     self.coco = COCO(annFile)
@@ -70,10 +70,12 @@ class cocodataset(data.Dataset):
     self.target_transform = target_transform
     self.root = root
     self.coco_mask=coco_mask
+    self.allclassnms = classes
     
 
 
   def __getitem__(self, index):
+    allclassnms = self.allclassnms
     coco = self.coco
     img_id = self.ids[index]
     img_metadata = coco.loadImgs(ids=img_id)[0]
@@ -89,7 +91,7 @@ class cocodataset(data.Dataset):
     for i in range(len(anns)):
       cat_id = anns[i]["category_id"]
       catname = coco.loadCats(cat_id)
-      classnumber = allclassnms.index(catname)
+      classnumber = allclassnms.index(catname[0]['name'])
       mask[classnumber] += coco.annToMask(anns[i])
 
     inimg, target = transformdata(img, mask)
