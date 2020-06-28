@@ -68,12 +68,12 @@ class cocodataset(data.Dataset):
     self.ids = list(sorted(self.coco.imgs.keys()))
     self.root = root
     self.coco_mask=coco_mask
-    self.allclassnms = classes
+    self.classes = classes
     
 
 
   def __getitem__(self, index):
-    allclassnms = self.allclassnms
+    allclassnms = self.classes
     coco = self.coco
     img_id = self.ids[index]
     img_metadata = coco.loadImgs(ids=img_id)[0]
@@ -101,5 +101,4 @@ class cocodataset(data.Dataset):
 
   def __len__(self):
     return len(self.ids)
-
 
