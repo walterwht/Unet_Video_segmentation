@@ -40,9 +40,9 @@ def transformdata(image, mask):
     # image Grayscale
     image = transforms.Grayscale(1)(image)
     
-    newMasks = torch.zeros((80,OPsize,OPsize))
+    newMasks = torch.zeros((81,OPsize,OPsize))
     
-    for mc in range(80):
+    for mc in range(81):
          nmask = transforms.ToPILImage(mode="L")(mask[mc]*255)
          nmask = resize(nmask)
          nmask = TF.crop(nmask, t, l, h, w)
@@ -82,7 +82,7 @@ class cocodataset(data.Dataset):
 
     ann_ids = coco.getAnnIds(imgIds=img_id)
     anns = coco.loadAnns(ann_ids)
-    mask = np.zeros((80,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
+    mask = np.zeros((81,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
     
     
     
