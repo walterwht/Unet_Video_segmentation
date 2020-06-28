@@ -95,7 +95,7 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
-        logits = logits.view(-1,self.n_classes)
+        logits = logits.permute(0, 2, 3, 1).view(-1,self.n_classes)
         out = self.lsm(logits)
         return out
 
