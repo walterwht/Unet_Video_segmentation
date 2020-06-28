@@ -66,8 +66,6 @@ class cocodataset(data.Dataset):
     import pycocotools._mask as coco_mask
     self.coco = COCO(annFile)
     self.ids = list(sorted(self.coco.imgs.keys()))
-    self.transform=transform
-    self.target_transform = target_transform
     self.root = root
     self.coco_mask=coco_mask
     self.allclassnms = classes
