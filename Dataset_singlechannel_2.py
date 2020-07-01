@@ -51,7 +51,7 @@ def transformdata(image, mask):
          if RVF > 0.5:
             nmask = TF.vflip(nmask)
          nmasknumpy = TF.to_tensor(nmask)
-         newMasks[mc] = nmasknumpy[0].round()
+         newMasks[mc] += nmasknumpy[0].round()
 
     # Transform to tensor
     image = TF.to_tensor(image)
@@ -82,7 +82,7 @@ class cocodataset(data.Dataset):
 
     ann_ids = coco.getAnnIds(imgIds=img_id)
     anns = coco.loadAnns(ann_ids)
-    mask = np.zeros((81,img_metadata['height'],img_metadata['width']),dtype=np.uint8)
+    mask = np.zeros((len(allclassnms),img_metadata['height'],img_metadata['width']),dtype=np.uint8)
     
     
     
@@ -94,10 +94,9 @@ class cocodataset(data.Dataset):
 
     inimg, target = transformdata(img, mask)
     
-    Tmask = torch.argmax(target, dim=0).squeeze(0)
 
       
-    return inimg, Tmask
+    return inimg, target
 
   def __len__(self):
     return len(self.ids)
