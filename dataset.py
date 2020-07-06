@@ -40,9 +40,9 @@ def transformdata(image, mask):
     # image Grayscale
     #image = transforms.Grayscale(1)(image)
     
-    newMasks = torch.zeros((81,OPsize,OPsize))
+    newMasks = torch.zeros((80,OPsize,OPsize))
     
-    for mc in range(81):
+    for mc in range(80):
          nmask = transforms.ToPILImage(mode="L")(mask[mc]*255)
          nmask = resize(nmask)
          nmask = TF.crop(nmask, t, l, h, w)
@@ -55,7 +55,7 @@ def transformdata(image, mask):
 
     # Transform to tensor
     image = TF.to_tensor(image)
-    newMasks[0] = 1-newMasks[1:][0]
+    #newMasks[0] = 1-newMasks[1:][0]
     
     
     return image, newMasks
