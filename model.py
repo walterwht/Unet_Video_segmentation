@@ -5,7 +5,6 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
 from torchvision import models
-from torchsummary import summary
 import matplotlib.pyplot as plt
 from PIL import Image
 
