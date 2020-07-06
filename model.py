@@ -30,11 +30,13 @@ class FinalStage(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
         self.bn = nn.BatchNorm2d(output_channel)
+        self.relu = nn.ReLU()
         #self.sm = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn(x)
+        #x = self.bn(x)
+        #x = self.relu(x)
         #x = self.sm(x)
         return x
 
