@@ -14,13 +14,13 @@ class videodataset(data.Dataset):
     self.root = root
     self.time = time
     self.size = size
+    self.video = read_video(self.root,3,self.time,self.size)
     
     
 
 
   def __getitem__(self, index):
-    video = read_video(self.root,3,self.time,self.size);
-    frame = video[index]    
+    frame = self.video[index]    
     return frame
 
   def __len__(self):
