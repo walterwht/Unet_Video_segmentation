@@ -15,7 +15,8 @@ class ResNetUNet(nn.Module):
         
         self.base_model = models.resnet18(pretrained=True)
         self.base_layers = list(self.base_model.children())                
-        
+        for p in self.parameters():
+            p.requires_grad = False
             
         self.layer0 = nn.Sequential(*self.base_layers[:3]) # size=(N, 64, x.H/2, x.W/2)
         self.layer0_1x1 = convrelu(64, 64, 1, 0)
@@ -27,8 +28,7 @@ class ResNetUNet(nn.Module):
         self.layer3_1x1 = convrelu(256, 256, 1, 0)  
         self.layer4 = self.base_layers[7]  # size=(N, 512, x.H/32, x.W/32)
         self.layer4_1x1 = convrelu(512, 512, 1, 0)  
-        for p in self.parameters():
-            p.requires_grad = False
+
             
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         
