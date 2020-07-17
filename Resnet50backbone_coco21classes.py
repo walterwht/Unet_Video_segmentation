@@ -1,84 +1,111 @@
 import torch
+import numpy as np
+import torchvision
 import torch.nn as nn
+import torchvision.transforms as transforms
+from torchvision.utils import save_image
 from torchvision import models
+import matplotlib.pyplot as plt
+from PIL import Image
 
-def convrelu(in_channels, out_channels, kernel, padding):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
-        nn.ReLU(inplace=True),
-    )
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class ResNetUNet(nn.Module):
-
-    def __init__(self, n_class):
+class ConvBlock(nn.Module):
+    def __init__(self, input_channel, output_channel, padding=0, kernel_size=1, stride=1, with_relu=True):
         super().__init__()
+        self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
+        self.bn = nn.BatchNorm2d(output_channel)
+        self.relu = nn.ReLU()
+        self.with_relu = with_relu
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        if self.with_relu:
+            x = self.relu(x)
+        return x
+
+class FinalStage(nn.Module):
+    def __init__(self, input_channel, output_channel, padding=0, kernel_size=1, stride=1):
+        super().__init__()
+        self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
+        self.bn = nn.BatchNorm2d(output_channel)
+        self.relu = nn.ReLU()
+        #self.sm = nn.Softmax(dim=1)
+
+    def forward(self, x):
         
-        #self.base_model = models.resnet18(pretrained=True)
-        self.base_model = models.segmentation.fcn_resnet50(pretrained=True, progress=True, num_classes=21)
-        self.base_layers = list(self.base_model.children())                
+        #x = self.bn(x)
+        x = self.relu(x)
+        x = self.conv(x)
+        #x = self.sm(x)
+        return x
+
+
+class Resnet50Unet(nn.Module):
+    def __init__(self, y_classes=92):
+        super().__init__()
+        self.model = models.segmentation.fcn_resnet50(pretrained=False, progress=True,num_classes=21, aux_loss=None)
+        self.Resnet = list(self.model.children())
+        self.Encoderlayers = list(self.Resnet[0].children())
+        self.FCNhead = list(self.Resnet[1].children())
+        
+        #print(self.Encoderlayers)
+        print(self.Resnet)
+        self.inputlayer = nn.Sequential(*self.Encoderlayers[:3])
+        self.layer1 = nn.Sequential(*self.Encoderlayers[4])
+        self.layer2 = self.Encoderlayers[5]
+        self.layer3 = self.Encoderlayers[6]
+        self.layer4 = self.Encoderlayers[7]
+        self.fullConnet = self.FCNhead[0]
         for p in self.parameters():
             p.requires_grad = False
-            
-        self.layer0 = nn.Sequential(*self.base_layers[:3]) # size=(N, 64, x.H/2, x.W/2)
-        self.layer0_1x1 = convrelu(64, 64, 1, 0)
-        self.layer1 = nn.Sequential(*self.base_layers[3:5]) # size=(N, 64, x.H/4, x.W/4)        
-        self.layer1_1x1 = convrelu(64, 64, 1, 0)       
-        self.layer2 = self.base_layers[5]  # size=(N, 128, x.H/8, x.W/8)        
-        self.layer2_1x1 = convrelu(128, 128, 1, 0)  
-        self.layer3 = self.base_layers[6]  # size=(N, 256, x.H/16, x.W/16)        
-        self.layer3_1x1 = convrelu(256, 256, 1, 0)  
-        self.layer4 = self.base_layers[7]  # size=(N, 512, x.H/32, x.W/32)
-        self.layer4_1x1 = convrelu(512, 512, 1, 0)  
 
-            
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        
-        self.conv_up3 = convrelu(256 + 512, 512, 3, 1)
-        self.conv_up2 = convrelu(128 + 512, 256, 3, 1)
-        self.conv_up1 = convrelu(64 + 256, 256, 3, 1)
-        self.conv_up0 = convrelu(64 + 256, 128, 3, 1)
-        
-        self.conv_original_size0 = convrelu(3, 64, 3, 1)
-        self.conv_original_size1 = convrelu(64, 64, 3, 1)
-        self.conv_original_size2 = convrelu(64 + 128, 64, 3, 1)
-        
-        self.conv_last = nn.Conv2d(64, n_class, 1)
-        
-    def forward(self, input):
-        x_original = self.conv_original_size0(input)
-        x_original = self.conv_original_size1(x_original)
-        
-        layer0 = self.layer0(input)            
-        layer1 = self.layer1(layer0)
-        layer2 = self.layer2(layer1)
-        layer3 = self.layer3(layer2)        
-        layer4 = self.layer4(layer3)
-        
-        layer4 = self.layer4_1x1(layer4)
-        x = self.upsample(layer4)
-        layer3 = self.layer3_1x1(layer3)
-        x = torch.cat([x, layer3], dim=1)
-        x = self.conv_up3(x)
- 
-        x = self.upsample(x)
-        layer2 = self.layer2_1x1(layer2)
-        x = torch.cat([x, layer2], dim=1)
-        x = self.conv_up2(x)
+        self.uplayer1 = nn.ConvTranspose2d(2048, 1024, 2, stride=2)
+        self.uplayer2 = nn.ConvTranspose2d(1024, 512, 2, stride=2)
+        self.uplayer3 = nn.ConvTranspose2d(512, 256, 2, stride=2)
+        self.uplayer4 = nn.ConvTranspose2d(128, 64, 2, stride=2)
+        self.uplayer5 = nn.ConvTranspose2d(64, 64, 2, stride=2)
 
-        x = self.upsample(x)
-        layer1 = self.layer1_1x1(layer1)
-        x = torch.cat([x, layer1], dim=1)
-        x = self.conv_up1(x)
+        self.upconv1 = ConvBlock(2048, 1024)
+        self.upconv2 = ConvBlock(1024, 512)
+        self.upconv3 = ConvBlock(512, 128)
+        self.upconv4 = ConvBlock(128, 64)
+        self.upconv5 = ConvBlock(64, 64)
 
-        x = self.upsample(x)
-        layer0 = self.layer0_1x1(layer0)
-        x = torch.cat([x, layer0], dim=1)
-        x = self.conv_up0(x)
-        
-        x = self.upsample(x)
-        x = torch.cat([x, x_original], dim=1)
-        x = self.conv_original_size2(x)        
-        
-        out = self.conv_last(x)        
-        
+        #self.UnetClasses = nn.Conv2d(64, y_classes, 1)
+
+        self.FinalStage = FinalStage(64,y_classes)
+
+    def forward(self, x):
+        downlayer1 = self.inputlayer(x)
+        downlayer2 = self.layer1(downlayer1)
+        downlayer3 = self.layer2(downlayer2)
+        downlayer4 = self.layer3(downlayer3)
+        out = self.layer4(downlayer4)
+
+        out = self.uplayer1(out)
+        out = torch.cat((out, downlayer4), dim=1)
+        out = self.upconv1(out)
+
+        out = self.uplayer2(out)
+        out = torch.cat((out, downlayer3), dim=1)
+        out = self.upconv2(out)
+
+        out = self.uplayer3(out)
+        out = torch.cat((out, downlayer2), dim=1)
+        out = self.upconv3(out)
+
+        out = self.uplayer4(out)
+        out = torch.cat((out, downlayer1), dim=1)
+        out = self.upconv4(out)
+
+        out = self.uplayer5(out)
+        out = self.upconv5(out)
+
+        #out = self.UnetClasses(out)
+        out = self.FinalStage(out)
+
         return out
+
+
