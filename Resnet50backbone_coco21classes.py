@@ -61,8 +61,11 @@ class Resnet50Unet(nn.Module):
         self.layer4 = self.Encoderlayers[7]
         self.fullConnet = self.FCNhead[0]
         print(self.Encoderlayers)
+        print(self.fullConnet)
+        print(self.inputlayer)
+        print(self.layer1)
 
-
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         
         self.uplayer1 = nn.ConvTranspose2d(2048, 1024, 1, stride=1)
         self.uplayer2 = nn.ConvTranspose2d(1024, 512, 1, stride=1)
@@ -74,35 +77,46 @@ class Resnet50Unet(nn.Module):
         self.upconv3 = ConvBlock(512, 128)
         self.upconv4 = ConvBlock(128, 64)
         
+        self.conv_original_size0 = ConvBlock(3, 64, 1, 3)
+        self.conv_original_size1 = ConvBlock(64, 64, 1, 3)
+        self.conv_original_size2 = ConvBlock(128, 64, 1, 3)
+        
         self.FinalStage = FinalStage(64,y_classes)
 
     def forward(self, x):
+        x_original = self.conv_original_size0(x)
+        x_original = self.conv_original_size1(x_original)
+
         inputlayer = self.inputlayer(x)#64 channel [2, 64, 128, 128])
         downlayer1 = self.layer1(inputlayer)# 256 channel [2, 256, 64, 64]
         downlayer2 = self.layer2(downlayer1)# 512 channel [2, 512, 32, 32]
         downlayer3 = self.layer3(downlayer2)# 1024 channel[2, 1024, 32, 32]
         downlayer4 = self.layer4(downlayer3)# 2048 channel[2, 2048, 32, 32]
- 
-        out = self.uplayer1(downlayer4)# 2048 -> 1024
+        
+        out = self.uplayer1(downlayer4)# 2048 -> 1024       
         out = torch.cat((out, downlayer3), dim=1)# 1024+1024
         out = self.upconv1(out)# 2048 -> 1024
-
+        
         out = self.uplayer2(out)# 1024 -> 512
         out = torch.cat((out, downlayer2), dim=1) # 512 + 512
         out = self.upconv2(out)# 1024 -> 512
-
+        
         out = self.uplayer3(out) # 512 -> 256
         out = torch.cat((out, downlayer1), dim=1)# 256 + 256
         out = self.upconv3(out)# 512 -> 128
-        print(out.shape)
         
         out = self.uplayer4(out) # 128 -> 64
         out = torch.cat((out, inputlayer), dim=1)# 64 + 64
         out = self.upconv4(out)# 128 -> 64
         
+        out = self.upsample(out)
+        out = torch.cat([out, x_original], dim=1)
+        
+        out = self.conv_original_size2(out)     
+        print(out.shape)
         #out = self.UnetClasses(out)
         out = self.FinalStage(out)
-
+        print(out.shape)
         return out
 
 
