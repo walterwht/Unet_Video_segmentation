@@ -98,8 +98,9 @@ class cocodataset(data.Dataset):
     for q in anns:
         if q["category_id"] in allclassid:
             catname = coco.loadCats(q["category_id"])
-            classnumber = allclassnms.index(catname[0]['name'])
-            mask[classnumber] += coco.annToMask(q)
+            if catname[0]['name'] in allclassnms:
+                classnumber = allclassnms.index(catname[0]['name'])
+                mask[classnumber] += coco.annToMask(q)
 
                 
     inimg, target = transformdata(img, mask)
