@@ -28,9 +28,11 @@ class ConvBlock(nn.Module):
 class FinalStage(nn.Module):
     def __init__(self, input_channel, output_channel, padding=0, kernel_size=1, stride=1):
         super().__init__()
-        self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
+        self.conv = nn.Conv2d(input_channel, input_channel, padding=padding, kernel_size=kernel_size, stride=stride)
         self.bn = nn.BatchNorm2d(output_channel)
         self.relu = nn.ReLU()
+        self.conv = nn.Conv2d(input_channel, output_channel, padding=padding, kernel_size=kernel_size, stride=stride)
+
         #self.sm = nn.Softmax(dim=1)
 
     def forward(self, x):
@@ -49,60 +51,55 @@ class Resnet50Unet(nn.Module):
         self.Resnet = list(self.model.children())
         self.Encoderlayers = list(self.Resnet[0].children())
         self.FCNhead = list(self.Resnet[1].children())
-        
-        #print(self.Encoderlayers)
-        print(self.Resnet)
+        for p in self.parameters():
+            p.requires_grad = False
+
         self.inputlayer = nn.Sequential(*self.Encoderlayers[:3])
-        self.layer1 = nn.Sequential(*self.Encoderlayers[4])
+        self.layer1 = nn.Sequential(*self.Encoderlayers[3:5])
         self.layer2 = self.Encoderlayers[5]
         self.layer3 = self.Encoderlayers[6]
         self.layer4 = self.Encoderlayers[7]
         self.fullConnet = self.FCNhead[0]
-        for p in self.parameters():
-            p.requires_grad = False
+        print(self.Encoderlayers)
 
-        self.uplayer1 = nn.ConvTranspose2d(2048, 1024, 2, stride=2)
-        self.uplayer2 = nn.ConvTranspose2d(1024, 512, 2, stride=2)
+
+        
+        self.uplayer1 = nn.ConvTranspose2d(2048, 1024, 1, stride=1)
+        self.uplayer2 = nn.ConvTranspose2d(1024, 512, 1, stride=1)
         self.uplayer3 = nn.ConvTranspose2d(512, 256, 2, stride=2)
         self.uplayer4 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.uplayer5 = nn.ConvTranspose2d(64, 64, 2, stride=2)
 
         self.upconv1 = ConvBlock(2048, 1024)
         self.upconv2 = ConvBlock(1024, 512)
         self.upconv3 = ConvBlock(512, 128)
         self.upconv4 = ConvBlock(128, 64)
-        self.upconv5 = ConvBlock(64, 64)
-
-        #self.UnetClasses = nn.Conv2d(64, y_classes, 1)
-
+        
         self.FinalStage = FinalStage(64,y_classes)
 
     def forward(self, x):
-        downlayer1 = self.inputlayer(x)
-        downlayer2 = self.layer1(downlayer1)
-        downlayer3 = self.layer2(downlayer2)
-        downlayer4 = self.layer3(downlayer3)
-        out = self.layer4(downlayer4)
+        inputlayer = self.inputlayer(x)#64 channel [2, 64, 128, 128])
+        downlayer1 = self.layer1(inputlayer)# 256 channel [2, 256, 64, 64]
+        downlayer2 = self.layer2(downlayer1)# 512 channel [2, 512, 32, 32]
+        downlayer3 = self.layer3(downlayer2)# 1024 channel[2, 1024, 32, 32]
+        downlayer4 = self.layer4(downlayer3)# 2048 channel[2, 2048, 32, 32]
+ 
+        out = self.uplayer1(downlayer4)# 2048 -> 1024
+        out = torch.cat((out, downlayer3), dim=1)# 1024+1024
+        out = self.upconv1(out)# 2048 -> 1024
 
-        out = self.uplayer1(out)
-        out = torch.cat((out, downlayer4), dim=1)
-        out = self.upconv1(out)
+        out = self.uplayer2(out)# 1024 -> 512
+        out = torch.cat((out, downlayer2), dim=1) # 512 + 512
+        out = self.upconv2(out)# 1024 -> 512
 
-        out = self.uplayer2(out)
-        out = torch.cat((out, downlayer3), dim=1)
-        out = self.upconv2(out)
-
-        out = self.uplayer3(out)
-        out = torch.cat((out, downlayer2), dim=1)
-        out = self.upconv3(out)
-
-        out = self.uplayer4(out)
-        out = torch.cat((out, downlayer1), dim=1)
-        out = self.upconv4(out)
-
-        out = self.uplayer5(out)
-        out = self.upconv5(out)
-
+        out = self.uplayer3(out) # 512 -> 256
+        out = torch.cat((out, downlayer1), dim=1)# 256 + 256
+        out = self.upconv3(out)# 512 -> 128
+        print(out.shape)
+        
+        out = self.uplayer4(out) # 128 -> 64
+        out = torch.cat((out, inputlayer), dim=1)# 64 + 64
+        out = self.upconv4(out)# 128 -> 64
+        
         #out = self.UnetClasses(out)
         out = self.FinalStage(out)
 
