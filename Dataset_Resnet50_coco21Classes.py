@@ -63,44 +63,45 @@ def transformdata(image, mask):
     return image, newMasks
 
 class cocodataset(data.Dataset):
-  def __init__(self, root, annFile, classes):
+  def __init__(self, root, annFile, classes, classid):
     from pycocotools.coco import COCO
     import pycocotools._mask as coco_mask
     self.coco = COCO(annFile)
-    self.ids = len(classes)
     self.root = root
-    self.coco_mask=coco_mask
     self.classes = classes
+    self.classid = classid
+    
+    self.imgIds=[]
+    for nms in self.classes:
+        if nms != self.classes[0]:
+            self.catIds = self.coco.getCatIds(catNms=nms)
+            self.imgIds.extend(self.coco.getImgIds(catIds=self.catIds))
     
 
 
   def __getitem__(self, index):
     allclassnms = self.classes
     coco = self.coco        
-    catIds = coco.getCatIds(catNms=self.ids[index])
-    imgIds = coco.getImgIds(catIds=catIds)
-    imgid = imgIds[np.random.randint(0, len(imgIds))]
-    img_metadata = coco.loadImgs(imgIds=imgid)[0]
+    imgIds =  self.imgIds
+    catIds = self.catIds
+    allclassid = self.classid
+    
+    img_metadata = coco.loadImgs(imgIds[index])[0]
     path = img_metadata['file_name']
     img = Image.open(os.path.join(self.root, path)).convert('RGB')
 
-    ann_ids = coco.getAnnIds(imgIds=imgid)
-    anns = coco.loadAnns(ann_ids)
+    ann_id = coco.getAnnIds(imgIds=imgIds[index])
+    anns = coco.loadAnns(ann_id)
     mask = np.zeros((len(allclassnms),img_metadata['height'],img_metadata['width']),dtype=np.uint8)
-    
-    annIds = coco.getAnnIds(imgIds=imgid, catIds=catIds, iscrowd=None)
-    anns = coco.loadAnns(annIds)
 
-    
-    
-    for i in range(len(anns)):
-        for cnms in allclassnms:
-            cat_id = anns[i]["category_id"]
-            if cat_id == cnms:
-                catname = coco.loadCats(cat_id)
-                classnumber = allclassnms.index(catname[0]['name'])
-                mask[classnumber] += coco.annToMask(anns[i])
 
+    for q in anns:
+        if q["category_id"] in allclassid:
+            catname = coco.loadCats(q["category_id"])
+            classnumber = allclassnms.index(catname[0]['name'])
+            mask[classnumber] += coco.annToMask(q)
+
+                
     inimg, target = transformdata(img, mask)
     
 
@@ -108,5 +109,5 @@ class cocodataset(data.Dataset):
     return inimg, target
 
   def __len__(self):
-    return len(self.classes)
+    return len(self.imgIds)
 
