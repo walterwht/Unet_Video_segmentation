@@ -62,8 +62,7 @@ class Resnet50Unet(nn.Module):
         self.fullConnet = self.FCNhead[0]
         print(self.Encoderlayers)
         print(self.fullConnet)
-        print(self.inputlayer)
-        print(self.layer1)
+
 
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         
@@ -113,10 +112,9 @@ class Resnet50Unet(nn.Module):
         out = torch.cat([out, x_original], dim=1)
         
         out = self.conv_original_size2(out)     
-        print(out.shape)
+ 
         #out = self.UnetClasses(out)
         out = self.FinalStage(out)
-        print(out.shape)
         return out
 
 
