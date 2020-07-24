@@ -51,8 +51,7 @@ class Resnet50Unet(nn.Module):
         self.Resnet = list(self.model.children())
         self.Encoderlayers = list(self.Resnet[0].children())
         self.FCNhead = list(self.Resnet[1].children())
-        for p in self.parameters():
-            p.requires_grad = False
+
 
         self.inputlayer = nn.Sequential(*self.Encoderlayers[:3])
         self.layer1 = nn.Sequential(*self.Encoderlayers[3:5])
@@ -60,8 +59,8 @@ class Resnet50Unet(nn.Module):
         self.layer3 = self.Encoderlayers[6]
         self.layer4 = self.Encoderlayers[7]
         self.fullConnet = self.FCNhead[0]
-        print(self.Encoderlayers)
-        print(self.fullConnet)
+        for p in self.parameters():
+            p.requires_grad = False
 
 
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
